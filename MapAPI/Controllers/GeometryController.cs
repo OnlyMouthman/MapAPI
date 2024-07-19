@@ -6,6 +6,9 @@ using System.Text.Json;
 using MapAPI.Models.Test;
 using MapAPI.Models.Controller;
 using System.Xml.Linq;
+using Microsoft.IdentityModel.Tokens;
+using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace MapAPI.Controllers
 {
@@ -20,15 +23,30 @@ namespace MapAPI.Controllers
         }
 
         /// <summary>
-        /// 取得搜群資料
+        /// 取得搜尋資料(清單)
         /// </summary>
         /// <param name="search"></param>
         /// <returns></returns>
         [HttpGet("SearchName")]
-        public ActionResult Get(string search)
+        public ActionResult SearchName(string? search)
         {
             //https://github.com/NetTopologySuite/NetTopologySuite/wiki/GettingStarted
-            var data = _context.GeoData.Where(w => w.Chinese == search);
+            
+            IQueryable<SearchList> data;
+            if (string.IsNullOrEmpty(search)) 
+                data = _context.GeoData.Take(10).Select(w => new SearchList { 
+                    Id = w.Id, 
+                    Chinese = w.Chinese, 
+                    Describe = w.Describe 
+                });
+            else 
+                data = _context.GeoData.Where(w => w.Chinese.Contains(search)).Select(w => new SearchList
+                {
+                    Id = w.Id,
+                    Chinese = w.Chinese,
+                    Describe = w.Describe
+                });
+
             var options = new JsonSerializerOptions
             {
                 Converters =
@@ -37,6 +55,37 @@ namespace MapAPI.Controllers
                 },
                 NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
             };
+
+            if (data == null) return Ok("");
+
+            string jsonString = JsonSerializer.Serialize(data, options);
+            return Ok(jsonString);
+        }
+
+        /// <summary>
+        /// 取得搜尋資料(單一個 所有資料)
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpGet("SearchById")]
+        public ActionResult SearchById(int Id)
+        {
+            //https://github.com/NetTopologySuite/NetTopologySuite/wiki/GettingStarted
+
+            IQueryable<GeoData> data;
+            data = _context.GeoData.Where(w => w.Id == Id);
+
+            var options = new JsonSerializerOptions
+            {
+                Converters =
+                {
+                    new GeometryConverter()
+                },
+                NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
+            };
+
+            if (data == null) return Ok("");
+
             string jsonString = JsonSerializer.Serialize(data, options);
             return Ok(jsonString);
         }

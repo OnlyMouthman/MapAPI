@@ -6,6 +6,13 @@ namespace MapAPI.Models.Controller
     {
     }
 
+    public partial class SearchList
+    {
+        public int Id { get; set; }
+        public string Chinese { get; set; }
+        public string Describe { get; set; }
+
+    }
     public partial class MyPoint
     {
         public double Latitude { get; set; }
